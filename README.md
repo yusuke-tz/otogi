@@ -1,2 +1,1 @@
 # otogi
-test
