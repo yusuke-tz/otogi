@@ -19,27 +19,48 @@ class MainActivity : AppCompatActivity() {
 
         //２）新しいクラスを表示させる
         val ballView = BallView(this)
+        ballView.init()
         setContentView(ballView)
     }
 
-    class Ball(r:Float, x: Float, y: Float, color: Int) {
+    class Ball(id:Int, r:Float, x: Float, y: Float, color: Int) {
+        private val util: Util = Util()
+        var id: Int = id
         var r: Float = r
         var x: Float = x
         var y: Float = y
         var color: Int = color
+
+        fun reset() {
+            this.x = 10000F
+            this.y = 10000F
+        }
+
+        fun setNewBall(x: Float, y: Float) {
+            this.r = util.getFloat()
+            this.x = x
+            this.y = y
+            this.color = util.getColor()
+        }
     }
 
     //１）Viewを継承したクラス
     class BallView(context: Context?) : View(context){
         private val util: Util = Util()
         private val backColor = Color.WHITE
-        private var isBall1 = true
         private var contacting = false
-
-        private var ball1 = Ball(util.getFloat(),1000F,1000F, backColor)
-        private val ball2 = Ball(util.getFloat(),1000F,1000F, backColor)
-
+        private var ballList = mutableListOf<Ball>()
+        private val ballCount = 5
+        private var ballNow = 0
+        private var ballNext = 0
         private var paint: Paint = Paint()
+
+        fun init() {
+            for (i in 0..ballCount-1) {
+                var ball = Ball(i, util.getFloat(),10000F,10000F, backColor)
+                ballList.add(ball)
+            }
+        }
 
         //３）onDrawで描画の準備
         override fun onDraw(canvas: Canvas?) {
@@ -48,11 +69,11 @@ class MainActivity : AppCompatActivity() {
             canvas?.drawColor(backColor) //カンバス（拝啓）色
 
             //４）ペイントする色の指定と、丸い図形
-            paint.color = ball1.color
-            canvas?.drawCircle(ball1.x, ball1.y, ball1.r, paint)
+            for (ball in ballList) {
+                paint.color = ball.color
+                canvas?.drawCircle(ball.x, ball.y, ball.r, paint)
+            }
 
-            paint.color = ball2.color
-            canvas?.drawCircle(ball2.x, ball2.y, ball2.r, paint)
         }
 
         //５）画面タッチ
@@ -61,43 +82,26 @@ class MainActivity : AppCompatActivity() {
             try{
                 when (event?.action) {
                     MotionEvent.ACTION_DOWN -> {
-                        if(contacting) {
-                            return true
+                        if(contacting) return true
+                        if(isExist(event)) return true
+
+                        ball = ballList[ballNext]
+                        ball.setNewBall(event!!.x, event.y)
+
+                        ballNow = ball.id
+                        ballNext++
+                        if (ballNext == ballCount) {
+                            ballNext = 0
                         }
-                        if(isBall1) {
-                            ball = ball1
-                            isBall1 = false
-                        } else {
-                            ball = ball2
-                            isBall1 = true
-                        }
-                        ball.x = event!!.x
-                        ball.y = event.y
-                        ball.r = util.getFloat()
-                        ball.color = util.getColor()
                     }
                     MotionEvent.ACTION_MOVE -> {
                         if(contacting) {
                             return true
                         }
-                        if(isBall1) {
-                            ball = ball2
-                        } else {
-                            ball = ball1
-                        }
+                        ball = ballList[ballNow]
                         ball.x = event!!.x
                         ball.y = event.y
-                        if(isContact()){
-                            ball1.x = (ball1.x + ball2.x) / 2
-                            ball1.y = (ball1.y + ball2.y) / 2
-                            ball1.r = (ball1.r + ball2.r)
-                            ball1.color = util.getAddColor(ball1.color, ball2.color)
-
-                            ball2.x = 10000F
-                            ball2.y = 10000F
-                            isBall1 = false
-                            contacting = true
-                        }
+                        unionBall()
                     }
                     MotionEvent.ACTION_UP -> {
                         contacting = false
@@ -114,12 +118,38 @@ class MainActivity : AppCompatActivity() {
             return true
         }
 
-        private fun isContact(): Boolean {
-            val dx = ball1.x - ball2.x
-            val dy = ball1.y - ball2.y
-            val len = sqrt(dx*dx + dy*dy)
-            return len < ball1.r + ball2.r
+        private fun unionBall() {
+            var ball = ballList[ballNow]
+            for (target in ballList) {
+                if (target.id != ballNow) {
+                    val dx = ball.x - target.x
+                    val dy = ball.y - target.y
+                    val len = sqrt(dx*dx + dy*dy)
+                    if (len < ball.r + target.r) {
+                        contacting = true
+                        ball.x = (ball.x + target.x) / 2
+                        ball.y = (ball.y + target.y) / 2
+                        ball.r = (ball.r + target.r)
+                        ball.color = util.getAddColor(ball.color, ball.color)
+                        target.reset()
+                    }
+                }
+            }
         }
+
+        private fun isExist(event: MotionEvent): Boolean {
+            for (ball in ballList) {
+                if (ball.x-ball.r <= event!!.x
+                    && event!!.x <= ball.x+ball.r
+                    && ball.y-ball.r <= event.y
+                    && event.y <= ball.y+ball.r) {
+                    ballNow = ball.id
+                    return true
+                }
+            }
+            return false
+        }
+
     }
 
 }
