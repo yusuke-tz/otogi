@@ -58,7 +58,7 @@ class BallView(context: Context?) : View(context){
                     setBallNext()
                     ball = ballList[ballNext]
                     ball.setNewBall(event!!.x, event.y)
-                    Log.d("TAG", "setNewBall")
+                    Log.d("INFO", "setNewBall")
 
                     ballNow = ball.id
                     ballNext++
@@ -82,8 +82,8 @@ class BallView(context: Context?) : View(context){
             }
             invalidate()
         } catch (e: Exception) {
-            Log.d("TAG", "error: onTouchEvent()")
-            Log.d("TAG", e.toString())
+            Log.d("ERROR", "onTouchEvent()")
+            Log.d("ERROR", e.toString())
             return false;
         } finally {
             //
@@ -120,8 +120,8 @@ class BallView(context: Context?) : View(context){
                 }
             }
         } catch (e: Exception) {
-            Log.d("TAG", "error: unionBall()")
-            Log.d("TAG", e.toString())
+            Log.d("ERROR", "unionBall()")
+            Log.d("ERROR", e.toString())
         }
     }
 
