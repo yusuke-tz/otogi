@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import java.lang.Exception
@@ -11,7 +12,7 @@ import kotlin.math.sqrt
 
 class BallView(context: Context?) : View(context){
     private val util: Util = Util()
-    private val backColor = Color.WHITE
+    private var backColor = Color.WHITE
     private var contacting = false
     private var ballList = mutableListOf<Ball>()
     private val ballCount = 5
@@ -23,6 +24,12 @@ class BallView(context: Context?) : View(context){
         for (i in 0 until ballCount) {
             val ball = Ball(i, util.getFloat(), 10000F, 10000F, backColor)
             ballList.add(ball)
+        }
+    }
+
+    private fun allReset() {
+        for (ball in ballList) {
+            ball.reset()
         }
     }
 
@@ -48,8 +55,10 @@ class BallView(context: Context?) : View(context){
                     if(contacting) return true
                     if(isExist(event)) return true
 
+                    setBallNext()
                     ball = ballList[ballNext]
                     ball.setNewBall(event!!.x, event.y)
+                    Log.d("TAG", "setNewBall")
 
                     ballNow = ball.id
                     ballNext++
@@ -73,6 +82,8 @@ class BallView(context: Context?) : View(context){
             }
             invalidate()
         } catch (e: Exception) {
+            Log.d("TAG", "error: onTouchEvent()")
+            Log.d("TAG", e.toString())
             return false;
         } finally {
             //
@@ -81,22 +92,36 @@ class BallView(context: Context?) : View(context){
         return true
     }
 
+    private fun setBallNext() {
+        for (ball in ballList) {
+            if(ball.x == 10000F) {
+                ballNext = ball.id
+                break
+            }
+        }
+    }
+
     private fun unionBall() {
         var ball = ballList[ballNow]
-        for (target in ballList) {
-            if (target.id != ballNow) {
-                val dx = ball.x - target.x
-                val dy = ball.y - target.y
-                val len = sqrt(dx*dx + dy*dy)
-                if (len < ball.r + target.r) {
-                    contacting = true
-                    ball.x = (ball.x + target.x) / 2
-                    ball.y = (ball.y + target.y) / 2
-                    ball.r = (ball.r + target.r)
-                    ball.color = util.getAddColor(ball.color, ball.color)
-                    target.reset()
+        try {
+            for (target in ballList) {
+                if (target.id != ballNow) {
+                    val dx = ball.x - target.x
+                    val dy = ball.y - target.y
+                    val len = sqrt(dx*dx + dy*dy)
+                    if (len < ball.r + target.r) {
+                        contacting = true
+                        ball.x = (ball.x + target.x) / 2
+                        ball.y = (ball.y + target.y) / 2
+                        ball.r = (ball.r + target.r)
+                        ball.color = util.getAddColor(ball.color, target.color)
+                        target.reset()
+                    }
                 }
             }
+        } catch (e: Exception) {
+            Log.d("TAG", "error: unionBall()")
+            Log.d("TAG", e.toString())
         }
     }
 
